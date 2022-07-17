@@ -13,7 +13,7 @@ namespace sg
     template <typename Tvalue>
     class bst_node
     {
-    public:
+    private:
         using pnode_t = std::shared_ptr<sg::bst_node<Tvalue>>;
         friend class sg::bst<Tvalue, sg::bst_node<Tvalue>>;
 
@@ -25,7 +25,7 @@ namespace sg
             parent {__parent}
         {}
 
-        bst_node(Tval&& __value, pnode_t __parent = nullptr) :
+        bst_node(Tvalue&& __value, pnode_t __parent = nullptr) :
             value {std::move(__value)},
             parent {__parent}
         {}
@@ -50,7 +50,7 @@ namespace sg
     template <typename Tvalue, typename Tnode>
     class bst
     {
-    public:
+    private:
         using node_t = Tnode;
         using pnode_t = std::shared_ptr<Tnode>;
 
@@ -60,7 +60,7 @@ namespace sg
         virtual void remove(const Tvalue& __value);
 
         template <typename... Args>
-        virtual void emplace(Args&&... args)
+        void emplace(Args&&... args)
         {
             Tvalue __value {std::forward<Args>(args)...};
             insert(std::move(__value));
@@ -85,7 +85,7 @@ namespace sg
 }
 
 template <typename Tvalue>
-inline sg::bst_node<Tvalue>::side
+inline typename sg::bst_node<Tvalue>::side
 sg::bst_node<Tvalue>::detach(pnode_t& __child, pnode_t& __parent)
 {
     // If __child is actually the root node or it's invalid, nothing to detach
@@ -104,6 +104,7 @@ sg::bst_node<Tvalue>::detach(pnode_t& __child, pnode_t& __parent)
         return sg::bst_node<Tvalue>::side::right;
     }
     // If they aren't connected, nothing to detach
+    return sg::bst_node<Tvalue>::side::null;
 }
 
 template <typename Tvalue>
@@ -115,7 +116,7 @@ inline void sg::bst_node<Tvalue>::attach_left(pnode_t& __child, pnode_t& __paren
     if (__parent->lchild ||  __child->parent) { return; /* Better to raise some exception*/ }
 
     __parent->lchild = __child;
-    __child->__parent = __parent;
+    __child->parent = __parent;
 }
 
 template <typename Tvalue>
@@ -127,7 +128,7 @@ inline void sg::bst_node<Tvalue>::attach_right(pnode_t& __child, pnode_t& __pare
     if (__parent->rchild ||  __child->parent) { return; /* Better to raise some exception*/ }
 
     __parent->rchild = __child;
-    __child->__parent = __parent;
+    __child->parent = __parent;
 }
 
 template <typename Tvalue>
@@ -136,10 +137,10 @@ sg::bst_node<Tvalue>::attach(pnode_t& __child, pnode_t& __parent, sg::bst_node<T
 {
     switch (__side)
     {
-        case (sg::bst_node<Tvalue>::left):
+        case (sg::bst_node<Tvalue>::side::left):
             sg::bst_node<Tvalue>::attach_left(__child, __parent);
             break;
-        case (sg::bst_node<Tvalue>::right):
+        case (sg::bst_node<Tvalue>::side::right):
             sg::bst_node<Tvalue>::attach_right(__child, __parent);
             break;
     }
@@ -197,7 +198,8 @@ void sg::bst<Tvalue, Tnode>::insert(Tvalue __value)
 }
 
 template <typename Tvalue, typename Tnode>
-sg::bst<Tvalue, Tnode>::pnode_t sg::bst<Tvalue, Tnode>::find(const Tvalue& __value) const
+typename sg::bst<Tvalue, Tnode>::pnode_t
+sg::bst<Tvalue, Tnode>::find(const Tvalue& __value) const
 {
     pnode_t current = root;
     while (current)
@@ -220,7 +222,8 @@ sg::bst<Tvalue, Tnode>::pnode_t sg::bst<Tvalue, Tnode>::find(const Tvalue& __val
 }
 
 template <typename Tvalue, typename Tnode>
-sg::bst<Tvalue, Tnode>::pnode_t sg::bst<Tvalue, Tnode>::successor(pnode_t __pnode) const
+typename sg::bst<Tvalue, Tnode>::pnode_t
+sg::bst<Tvalue, Tnode>::successor(pnode_t __pnode) const
 {
     if (__pnode->rchild) { return min_rsubtree(__pnode); }
     // If there's no right subtree, the successor of pnode may be found upwards
@@ -247,7 +250,8 @@ sg::bst<Tvalue, Tnode>::pnode_t sg::bst<Tvalue, Tnode>::successor(pnode_t __pnod
 }
 
 template <typename Tvalue, typename Tnode>
-sg::bst<Tvalue, Tnode>::pnode_t sg::bst<Tvalue, Tnode>::predecessor(pnode_t __pnode) const
+typename sg::bst<Tvalue, Tnode>::pnode_t
+sg::bst<Tvalue, Tnode>::predecessor(pnode_t __pnode) const
 {
     if (__pnode->lchild) { return max_lsubtree(__pnode); }
     // Similarly to finding successor, if there's no left subtree, predecessor can be found
@@ -273,7 +277,8 @@ sg::bst<Tvalue, Tnode>::pnode_t sg::bst<Tvalue, Tnode>::predecessor(pnode_t __pn
 }
 
 template <typename Tvalue, typename Tnode>
-sg::bst<Tvalue, Tnode>::pnode_t sg::bst<Tvalue, Tnode>::min_rsubtree(pnode_t __pnode) const
+typename sg::bst<Tvalue, Tnode>::pnode_t
+sg::bst<Tvalue, Tnode>::min_rsubtree(pnode_t __pnode) const
 {
     pnode_t previous = __pnode;
     pnode_t current = __pnode->rchild;
@@ -291,7 +296,8 @@ sg::bst<Tvalue, Tnode>::pnode_t sg::bst<Tvalue, Tnode>::min_rsubtree(pnode_t __p
 }
 
 template <typename Tvalue, typename Tnode>
-sg::bst<Tvalue, Tnode>::pnode_t sg::bst<Tvalue, Tnode>::max_lsubtree(pnode_t __pnode) const
+typename sg::bst<Tvalue, Tnode>::pnode_t
+sg::bst<Tvalue, Tnode>::max_lsubtree(pnode_t __pnode) const
 {
     pnode_t previous = __pnode;
     pnode_t current = __pnode->lchild;
@@ -373,7 +379,7 @@ void sg::bst<Tvalue, Tnode>::remove(const Tvalue& __value)
 
             node_t::detach(s_rchild, s); // Does nothing if s_rchild is nullptr
             node_t::detach(s, s_parent);
-            node_t::attach(s_rchild, s_parent); // Does nothing if s_rchild is nullptr
+            node_t::attach_left(s_rchild, s_parent); // Does nothing if s_rchild is nullptr
 
             node_t::detach(left, pnode);
             node_t::detach(right, pnode);

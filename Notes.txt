@@ -1,0 +1,4 @@
+1. In sg::bst emplace must overriden version of insert.
+2. In sg::bst must have a destructor that would detach in BFS all
+   the layers of nodes in tree when the structure goes out of scope
+   (and while detaching it will free all the nodes becauase of std::shared_ptr)
