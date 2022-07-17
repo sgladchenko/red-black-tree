@@ -330,19 +330,24 @@ void sg::bst<Tvalue, Tnode>::remove(const Tvalue& __value)
     // If pnode is a leaf, just remove it
     if (!left && !right)
     {
-        node_t::detach(pnode, parent);
+        if (parent) { node_t::detach(pnode, parent); }
+        else { root = nullptr; } // parent == nullptr means that pnode was root
     }
     // If pnode has only left child, replace pnode by its left child in the tree
     else if (left && !right)
     {
-        node_t::detach(pnode, parent);
-        node_t::attach_left(left, parent);
+        node_t::detach(left, pnode);
+        typename node_t::side side = node_t::detach(pnode, parent);
+        if (parent) { node_t::attach(left, parent, side); }
+        else { root = left; } // parent == nullptr means that pnode was root
     }
     // If pnode has only right child, replace pnode by its right child in the tree
     else if (!left && right)
     {
-        node_t::detach(pnode, parent);
-        node_t::attach_right(right, parent);
+        node_t::detach(right, pnode);
+        typename node_t::side side = node_t::detach(pnode, parent);
+        if (parent) { node_t::attach(right, parent, side); }
+        else { root = right; } // parent == nullptr means that pnode was root
     }
     // Last case is when pnode has both left and right children;
     else
@@ -356,17 +361,12 @@ void sg::bst<Tvalue, Tnode>::remove(const Tvalue& __value)
         if (s == right)
         {
             node_t::detach(left, pnode);
-            node_t::attach_left(left, s);
+            node_t::attach_left(left, right);
+            node_t::detach(right, pnode);
+
             typename node_t::side side = node_t::detach(pnode, parent);
-            if (parent)
-            {
-                node_t::attach(s, parent, side);
-            }
-            else
-            {
-                // If parent is nullptr, then pnode was root, and thus right must become the root
-                s->parent = nullptr;
-            }
+            if (parent) { node_t::attach(right, parent, side); }
+            else { root = right; } // parent == nullptr means that pnode was root
         }
         // If it's not an immediate child, we will still substitute pnode with its successor, but
         // we will need to re-link right child of the successor to the right child of pnode
@@ -377,7 +377,7 @@ void sg::bst<Tvalue, Tnode>::remove(const Tvalue& __value)
             pnode_t s_rchild = s->rchild;
             pnode_t s_parent = s->parent;
 
-            node_t::detach(s_rchild, s); // Does nothing if s_rchild is nullptr
+            node_t::detach(s_rchild, s);             // Does nothing if s_rchild is nullptr
             node_t::detach(s, s_parent);
             node_t::attach_left(s_rchild, s_parent); // Does nothing if s_rchild is nullptr
 
@@ -387,15 +387,8 @@ void sg::bst<Tvalue, Tnode>::remove(const Tvalue& __value)
             node_t::attach_right(right, s);
 
             typename node_t::side side = node_t::detach(pnode, parent);
-            if (parent)
-            {
-                node_t::attach(s, parent, side);
-            }
-            else
-            {
-                // If parent is nullptr, then pnode was root, and thus right must become the root
-                s->parent = nullptr;
-            }
+            if (parent) { node_t::attach(s, parent, side); }
+            else { root = s; } // parent == nullptr means that pnode was root
         }
     }
     tree_size--;
