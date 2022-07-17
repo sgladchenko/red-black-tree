@@ -108,7 +108,8 @@ sg::bst_node<Tvalue>::detach(pnode_t& __child, pnode_t& __parent)
 }
 
 template <typename Tvalue>
-inline void sg::bst_node<Tvalue>::attach_left(pnode_t& __child, pnode_t& __parent)
+inline void
+sg::bst_node<Tvalue>::attach_left(pnode_t& __child, pnode_t& __parent)
 {
     // Pointers must be valid
     if (!__parent || !__child) { return; }
@@ -120,7 +121,8 @@ inline void sg::bst_node<Tvalue>::attach_left(pnode_t& __child, pnode_t& __paren
 }
 
 template <typename Tvalue>
-inline void sg::bst_node<Tvalue>::attach_right(pnode_t& __child, pnode_t& __parent)
+inline void
+sg::bst_node<Tvalue>::attach_right(pnode_t& __child, pnode_t& __parent)
 {
     // Pointers must be valid
     if (!__parent || !__child) { return; }
@@ -147,13 +149,15 @@ sg::bst_node<Tvalue>::attach(pnode_t& __child, pnode_t& __parent, sg::bst_node<T
 }
 
 template <typename Tvalue, typename Tnode>
-bool sg::bst<Tvalue, Tnode>::exists(const Tvalue& __value) const
+bool
+sg::bst<Tvalue, Tnode>::exists(const Tvalue& __value) const
 {
     return find(__value) != nullptr;
 }
 
 template <typename Tvalue, typename Tnode>
-void sg::bst<Tvalue, Tnode>::insert(Tvalue __value)
+void
+sg::bst<Tvalue, Tnode>::insert(Tvalue __value)
 {
     if (!root)
     {
@@ -315,7 +319,8 @@ sg::bst<Tvalue, Tnode>::max_lsubtree(pnode_t __pnode) const
 }
 
 template <typename Tvalue, typename Tnode>
-void sg::bst<Tvalue, Tnode>::remove(const Tvalue& __value)
+void
+sg::bst<Tvalue, Tnode>::remove(const Tvalue& __value)
 {
     pnode_t pnode = find(__value);
     if (!pnode)
