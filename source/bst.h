@@ -327,13 +327,14 @@ void sg::bst<Tvalue, Tnode>::remove(const Tvalue& __value)
     pnode_t left = pnode->lchild;
     pnode_t right = pnode->rchild;
 
-    // If pnode is a leaf, just remove it
+    // 1. If pnode is a leaf, just remove it
     if (!left && !right)
     {
         if (parent) { node_t::detach(pnode, parent); }
         else { root = nullptr; } // parent == nullptr means that pnode was root
     }
-    // If pnode has only left child, replace pnode by its left child in the tree
+
+    // 2. If pnode has only left child, replace pnode by its left child in the tree
     else if (left && !right)
     {
         node_t::detach(left, pnode);
@@ -341,7 +342,8 @@ void sg::bst<Tvalue, Tnode>::remove(const Tvalue& __value)
         if (parent) { node_t::attach(left, parent, side); }
         else { root = left; } // parent == nullptr means that pnode was root
     }
-    // If pnode has only right child, replace pnode by its right child in the tree
+
+    // 3. If pnode has only right child, replace pnode by its right child in the tree
     else if (!left && right)
     {
         node_t::detach(right, pnode);
@@ -349,7 +351,8 @@ void sg::bst<Tvalue, Tnode>::remove(const Tvalue& __value)
         if (parent) { node_t::attach(right, parent, side); }
         else { root = right; } // parent == nullptr means that pnode was root
     }
-    // Last case is when pnode has both left and right children;
+
+    // 4. Last case is when pnode has both left and right children;
     else
     {
         // First find the successor of pnode;
