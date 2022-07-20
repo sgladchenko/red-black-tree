@@ -2,6 +2,17 @@
 
 #include "bst.h"
 
+struct node
+{
+    int value;
+
+    node(int __value) : value {__value} {}
+    ~node() { std::cout << "deleted " << value << std::endl; }
+};
+
+bool operator<(const node& __node1, const node& __node2) { return __node1.value < __node2.value; }
+bool operator>(const node& __node1, const node& __node2) { return __node1.value > __node2.value; }
+bool operator==(const node& __node1, const node& __node2) { return __node1.value == __node2.value; }
 class Tests
 {
 public:
@@ -64,10 +75,27 @@ public:
             }
         }
     }
+
+    static void test2()
+    {
+        std::cout << "test2\n";
+
+        sg::bst<node> bst_example;
+
+        int N = 8;
+        int array[] = {12, 1, 3, 10, 5, 11, 2, 0};
+
+        std::cout << "Before bst initialization\n";
+
+        for (int i = 0; i < N; ++i) { bst_example.insert(array[i]); }
+
+        std::cout << "After bst initialization\n";
+    }
 };
 
 int main()
 {
-    Tests::test1();
+    //Tests::test1();
+    Tests::test2();
     return 0;
 }

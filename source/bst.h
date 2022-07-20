@@ -30,6 +30,11 @@ namespace sg
             parent {__parent}
         {}
 
+        bool is_leaf() const
+        {
+            return (!lchild && !rchild);
+        }
+
         enum class side { left, right, null };
 
     protected:
@@ -55,14 +60,16 @@ namespace sg
         using pnode_t = std::shared_ptr<Tnode>;
 
     public:
+        virtual ~bst();
+
         virtual bool exists(const Tvalue& __value) const;
         virtual void insert(Tvalue __value);
         virtual void remove(const Tvalue& __value);
 
         template <typename... Args>
-        void emplace(Args&&... args)
+        void emplace(Args&&... __args)
         {
-            Tvalue __value {std::forward<Args>(args)...};
+            Tvalue __value {std::forward<Args>(__args)...};
             insert(std::move(__value));
         }
 
@@ -139,12 +146,34 @@ sg::bst_node<Tvalue>::attach(pnode_t& __child, pnode_t& __parent, sg::bst_node<T
 {
     switch (__side)
     {
-        case (sg::bst_node<Tvalue>::side::left):
-            sg::bst_node<Tvalue>::attach_left(__child, __parent);
-            break;
-        case (sg::bst_node<Tvalue>::side::right):
-            sg::bst_node<Tvalue>::attach_right(__child, __parent);
-            break;
+    case (sg::bst_node<Tvalue>::side::left):
+        sg::bst_node<Tvalue>::attach_left(__child, __parent);
+        break;
+    case (sg::bst_node<Tvalue>::side::right):
+        sg::bst_node<Tvalue>::attach_right(__child, __parent);
+        break;
+    }
+}
+
+template <typename Tvalue, typename Tnode>
+sg::bst<Tvalue, Tnode>::~bst()
+{
+    // In a depth-first-search subsequently detach nodes from their parents
+    pnode_t parent = root;
+    pnode_t child;
+    while (parent)
+    {
+        if (!parent->is_leaf())
+        {
+            if (parent->lchild) { parent = parent->lchild; }
+            else                { parent = parent->rchild; }
+        }
+        else
+        {
+            child = parent;
+            parent = child->parent;
+            if (parent) { node_t::detach(child, parent); }
+        }
     }
 }
 
@@ -171,11 +200,8 @@ sg::bst<Tvalue, Tnode>::insert(Tvalue __value)
     pnode_t current = root;
     while (current)
     {
-        if (__value == current->value)
-        {
-            // If the object already exists, do nothing
-            return;
-        }
+        // If the object already exists, do nothing
+        if (__value == current->value) { return; }
 
         if (__value < current->value)
         {
@@ -208,10 +234,7 @@ sg::bst<Tvalue, Tnode>::find(const Tvalue& __value) const
     pnode_t current = root;
     while (current)
     {
-        if (__value == current->value)
-        {
-            return current;
-        }
+        if (__value == current->value) { return current; }
 
         if (__value < current->value)
         {
@@ -323,41 +346,43 @@ void
 sg::bst<Tvalue, Tnode>::remove(const Tvalue& __value)
 {
     pnode_t pnode = find(__value);
-    if (!pnode)
-    {
-        // If there's no such element, do nothing
-        return;
-    }
+    if (!pnode) { return; } // If there's no such element, do nothing
+
     pnode_t parent = pnode->parent;
     pnode_t left = pnode->lchild;
     pnode_t right = pnode->rchild;
 
-    if (!left && !right) // 1. If pnode is a leaf, just remove it
+    if (!left && !right)
     {
+        // 1. If pnode is a leaf, just remove it
         if (parent) { node_t::detach(pnode, parent); }
         else { root = nullptr; } // parent == nullptr means that pnode was root
     }
-    else if (left && !right) // 2. If pnode has only left child, replace pnode by its left child in the tree
+    else if (left && !right)
     {
+        // 2. If pnode has only left child, replace pnode by its left child in the tree
         node_t::detach(left, pnode);
         typename node_t::side side = node_t::detach(pnode, parent);
+
         if (parent) { node_t::attach(left, parent, side); }
-        else { root = left; } // parent == nullptr means that pnode was root
+        else { root = left; } // parent == nullptr means that pnode was roots
     }
-    else if (!left && right) // 3. If pnode has only right child, replace pnode by its right child in the tree
+    else if (!left && right)
     {
+        // 3. If pnode has only right child, replace pnode by its right child in the tree
         node_t::detach(right, pnode);
         typename node_t::side side = node_t::detach(pnode, parent);
+
         if (parent) { node_t::attach(right, parent, side); }
         else { root = right; } // parent == nullptr means that pnode was root
     }
-    else // 4. Last case is when pnode has both left and right children;
+    else
     {
+        // 4. Last case is when pnode has both left and right children;
         // First find the successor of pnode;
         // As pnode has right subtree (right != nullptr), its successor is somewhere below.
-        pnode_t s = successor(pnode);
         // Just quick note: s doesn't have a left child (always!)
-
+        pnode_t s = successor(pnode);
         // If s is pnode's immediate child
         if (s == right)
         {
