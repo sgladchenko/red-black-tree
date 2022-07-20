@@ -332,33 +332,26 @@ sg::bst<Tvalue, Tnode>::remove(const Tvalue& __value)
     pnode_t left = pnode->lchild;
     pnode_t right = pnode->rchild;
 
-    // 1. If pnode is a leaf, just remove it
-    if (!left && !right)
+    if (!left && !right) // 1. If pnode is a leaf, just remove it
     {
         if (parent) { node_t::detach(pnode, parent); }
         else { root = nullptr; } // parent == nullptr means that pnode was root
     }
-
-    // 2. If pnode has only left child, replace pnode by its left child in the tree
-    else if (left && !right)
+    else if (left && !right) // 2. If pnode has only left child, replace pnode by its left child in the tree
     {
         node_t::detach(left, pnode);
         typename node_t::side side = node_t::detach(pnode, parent);
         if (parent) { node_t::attach(left, parent, side); }
         else { root = left; } // parent == nullptr means that pnode was root
     }
-
-    // 3. If pnode has only right child, replace pnode by its right child in the tree
-    else if (!left && right)
+    else if (!left && right) // 3. If pnode has only right child, replace pnode by its right child in the tree
     {
         node_t::detach(right, pnode);
         typename node_t::side side = node_t::detach(pnode, parent);
         if (parent) { node_t::attach(right, parent, side); }
         else { root = right; } // parent == nullptr means that pnode was root
     }
-
-    // 4. Last case is when pnode has both left and right children;
-    else
+    else // 4. Last case is when pnode has both left and right children;
     {
         // First find the successor of pnode;
         // As pnode has right subtree (right != nullptr), its successor is somewhere below.
