@@ -49,9 +49,11 @@ namespace sg
         pnode_t rchild = nullptr;
 
         static sg::bst_node<Tvalue>::connection detach(pnode_t& __child, pnode_t& __parent);
-        static void attach_left(pnode_t& __child, pnode_t& __parent);
-        static void attach_right(pnode_t& __child, pnode_t& __parent);
-        static void attach(pnode_t& __child, pnode_t& __parent, sg::bst_node<Tvalue>::connection __side);
+        static sg::bst_node<Tvalue>::connection attach_left(pnode_t& __child, pnode_t& __parent);
+        static sg::bst_node<Tvalue>::connection attach_right(pnode_t& __child, pnode_t& __parent);
+        static sg::bst_node<Tvalue>::connection attach(pnode_t& __child,
+                                                       pnode_t& __parent,
+                                                       sg::bst_node<Tvalue>::connection __side);
     };
 }
 
@@ -126,57 +128,64 @@ sg::bst_node<Tvalue>::detach(pnode_t& __child, pnode_t& __parent)
 }
 
 template <typename Tvalue>
-inline void
+inline typename sg::bst_node<Tvalue>::connection
 sg::bst_node<Tvalue>::attach_left(pnode_t& __child, pnode_t& __parent)
 {
     // Pointers must be valid
     if (!__parent || !__child)
     {
-        return;
+        return sg::bst_node<Tvalue>::connection::none;
     }
+
     // __parent must not have a left child and __child must not have a parent
     // in order to make attachment
     if (__parent->lchild ||  __child->parent)
     {
-        return;
+        return sg::bst_node<Tvalue>::connection::none;
     }
 
     __parent->lchild = __child;
     __child->parent = __parent;
+    return sg::bst_node<Tvalue>::connection::left;
 }
 
 template <typename Tvalue>
-inline void
+inline typename sg::bst_node<Tvalue>::connection
 sg::bst_node<Tvalue>::attach_right(pnode_t& __child, pnode_t& __parent)
 {
     // Pointers must be valid
     if (!__parent || !__child)
     {
-        return;
+        return sg::bst_node<Tvalue>::connection::none;
     }
+
     // __parent must not have a right child and __child must not have a parent
     // in order to make attachment
     if (__parent->rchild ||  __child->parent)
     {
-        return;
+        return sg::bst_node<Tvalue>::connection::none;
     }
 
     __parent->rchild = __child;
     __child->parent = __parent;
+    return sg::bst_node<Tvalue>::connection::right;
 }
 
 template <typename Tvalue>
-inline void
-sg::bst_node<Tvalue>::attach(pnode_t& __child, pnode_t& __parent, sg::bst_node<Tvalue>::connection __side)
+inline typename sg::bst_node<Tvalue>::connection
+sg::bst_node<Tvalue>::attach(pnode_t& __child, pnode_t& __parent,
+                             sg::bst_node<Tvalue>::connection __side)
 {
     switch (__side)
     {
-        case (sg::bst_node<Tvalue>::side::left):
-            sg::bst_node<Tvalue>::attach_left(__child, __parent);
-            break;
-        case (sg::bst_node<Tvalue>::side::right):
-            sg::bst_node<Tvalue>::attach_right(__child, __parent);
-            break;
+        case (sg::bst_node<Tvalue>::connection::left):
+            return sg::bst_node<Tvalue>::attach_left(__child, __parent);
+
+        case (sg::bst_node<Tvalue>::connection::right):
+            return sg::bst_node<Tvalue>::attach_right(__child, __parent);
+
+        default:
+            return sg::bst_node<Tvalue>::connection::none;
     }
 }
 
@@ -204,6 +213,7 @@ sg::bst<Tvalue, Tnode>::~bst()
         {
             child = parent;
             parent = child->parent;
+            
             if (parent)
             {
                 node_t::detach(child, parent);
@@ -227,6 +237,7 @@ sg::bst<Tvalue, Tnode>::insert(Tvalue __value)
     {
         // If the tree is empty, put __value to the root node
         root = std::make_shared<node_t>(std::move(__value));
+        tree_size++;
         return;
     }
 
@@ -237,8 +248,11 @@ sg::bst<Tvalue, Tnode>::insert(Tvalue __value)
 
     while (current)
     {
-        // If the object already exists, do nothing
-        if (__value == current->value) { return; }
+        if (__value == current->value)
+        {
+            // If the object already exists, do nothing
+            return;
+        }
 
         if (__value < current->value)
         {
@@ -262,6 +276,7 @@ sg::bst<Tvalue, Tnode>::insert(Tvalue __value)
     {
         previous->rchild = std::make_shared<node_t>(std::move(__value), previous);
     }
+
     tree_size++;
 }
 
@@ -270,6 +285,7 @@ typename sg::bst<Tvalue, Tnode>::pnode_t
 sg::bst<Tvalue, Tnode>::find(const Tvalue& __value) const
 {
     pnode_t current = root;
+
     while (current)
     {
         if (__value == current->value)
@@ -286,6 +302,7 @@ sg::bst<Tvalue, Tnode>::find(const Tvalue& __value) const
             current = current->rchild;
         }
     }
+
     return nullptr;
 }
 
@@ -405,7 +422,11 @@ void
 sg::bst<Tvalue, Tnode>::remove(const Tvalue& __value)
 {
     pnode_t pnode = find(__value);
-    if (!pnode) { return; } // If there's no such element, do nothing
+    if (!pnode)
+    {
+        // If there's no such element, nothing to remove
+        return;
+    }
 
     pnode_t parent = pnode->parent;
     pnode_t left = pnode->lchild;
@@ -429,7 +450,7 @@ sg::bst<Tvalue, Tnode>::remove(const Tvalue& __value)
         // 2. If pnode has only left child, replace pnode by its left child in the tree
 
         node_t::detach(left, pnode);
-        typename node_t::side side = node_t::detach(pnode, parent);
+        typename node_t::connection side = node_t::detach(pnode, parent);
 
         if (parent)
         {
@@ -445,7 +466,7 @@ sg::bst<Tvalue, Tnode>::remove(const Tvalue& __value)
         // 3. If pnode has only right child, replace pnode by its right child in the tree
 
         node_t::detach(right, pnode);
-        typename node_t::side side = node_t::detach(pnode, parent);
+        typename node_t::connection side = node_t::detach(pnode, parent);
 
         if (parent)
         {
@@ -471,7 +492,8 @@ sg::bst<Tvalue, Tnode>::remove(const Tvalue& __value)
             node_t::detach(left, pnode);
             node_t::attach_left(left, right);
             node_t::detach(right, pnode);
-            typename node_t::side side = node_t::detach(pnode, parent);
+
+            typename node_t::connection side = node_t::detach(pnode, parent);
 
             if (parent)
             {
@@ -500,7 +522,7 @@ sg::bst<Tvalue, Tnode>::remove(const Tvalue& __value)
             node_t::attach_left(left, s);
             node_t::attach_right(right, s);
 
-            typename node_t::side side = node_t::detach(pnode, parent);
+            typename node_t::connection side = node_t::detach(pnode, parent);
 
             if (parent)
             {

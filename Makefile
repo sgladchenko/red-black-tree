@@ -1,5 +1,10 @@
 CXX = g++
+BUILD = build
+TESTS = tests
+CXXSTD = -std=c++14
+GTEST = -lgtest
+INCLUDE = -I source/
 
-.PHONY: simple_tests
-simple_tests: source/bst.h tests/simple_tests.cpp
-	g++ -g -std=c++17 -I source/ tests/simple_tests.cpp -o build/simple_tests
+.PHONY: tests
+tests: $(TESTS)/bstTests.cpp
+	$(CXX) $(CXXSTD) $(TESTS)/bstTests.cpp $(INCLUDE) $(GTEST) -o $(BUILD)/tests
